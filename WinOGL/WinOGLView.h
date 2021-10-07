@@ -4,6 +4,7 @@
 
 #pragma once
 #include <gl/GL.h>
+#include "CAdminControl.h"
 
 
 class CWinOGLView : public CView
@@ -45,12 +46,14 @@ private:
 	HGLRC m_hRC;
 	double clickX;
 	double clickY;
+	CAdminControl AC;
 
 public:
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnDestroy();
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
+
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン

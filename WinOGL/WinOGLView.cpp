@@ -61,15 +61,6 @@ void CWinOGLView::OnDraw(CDC* pDC)
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT /* | GL_DEPTH_BUFFER_BIT */);
 
-	glColor3f(1.0, 1.0, 1.0);
-
-	// glBegin(GL_LINE_LOOP);
-
-	/* 頂点3つを設定し、三角形を描画
-	glVertex2f(-1.0, 0.5);
-	glVertex2f(0.0, -0.5);
-	glVertex2f(1.0, 0.5);
-	*/
 
 	/* 問6.1 頂点を4つ設定し、四角形を描画
 	glVertex2f(-0.5, 0.5);
@@ -78,8 +69,10 @@ void CWinOGLView::OnDraw(CDC* pDC)
 	glVertex2f(-0.5, -0.5);
 	*/
 
-	glPointSize(5);
 	glVertex2f(clickX, clickY);
+
+	AC.Draw();
+
 	glEnd();//ここまで描画の合図
 
 	glFlush();
@@ -122,26 +115,25 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 	int h = rect.Height();
 
 	// 正規化変換
-	double viewingX = (double)point.x / (double)w;
-	double viewingY = (double)point.y / (double)h;
-	viewingY = (viewingY - 1) * -1;
-	double worldX = viewingX * 2 - 1;
-	double worldY = viewingY * 2 - 1;
-
-	clickX = worldX;
-	clickY = worldY;
+	clickX = (double)point.x / (double)w;
+	clickY = (double)point.y / (double)h;
+	clickY = 1 - clickY;
+	clickX = clickX * 2 - 1;
+	clickY = clickY * 2 - 1;
 
 	double raito = 1;
 
 	// 縦長のとき
-	if (w < h) {
+	if (w > h) {
 		raito = (float)w / h;
 		clickX = clickX * raito;
+		glOrtho(-raito, raito, -1, 1, -100, 100);
 	}
 	// 横長のとき
 	else {
 		raito = (float)h / w;
 		clickY = clickY * raito;
+		glOrtho(-1, 1, -raito, raito, -100, 100);
 	}
 
 	RedrawWindow();
