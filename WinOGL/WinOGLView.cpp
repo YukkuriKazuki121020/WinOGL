@@ -73,7 +73,7 @@ void CWinOGLView::OnDraw(CDC* pDC)
 
 	AC.Draw();
 
-	glEnd();//ここまで描画の合図
+	//glEnd();//ここまで描画の合図
 
 	glFlush();
 	SwapBuffers(pDC->m_hDC);
