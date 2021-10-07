@@ -12,7 +12,7 @@ CAdminControl::~CAdminControl()
 
 void CAdminControl::SetVertex(double x, double y)
 {
-	vertex_head->SetNext(&CVertex(x, y, NULL));
+	vertex_head->SetNext(new CVertex(x, y, NULL));
 }
 
 void CAdminControl::Draw()
