@@ -8,7 +8,7 @@ CVertex::CVertex()
 	next_vertex = NULL;
 }
 
-CVertex::CVertex(int new_x, int new_y, CVertex* new_next)
+CVertex::CVertex(double new_x, double new_y, CVertex* new_next)
 {
 	SetXY(new_x, new_y);
 	SetNext(new_next);
@@ -20,7 +20,7 @@ CVertex::~CVertex()
 }
 
 //　頂点のX座標を書き込む
-void CVertex::SetX(int new_x)
+void CVertex::SetX(double new_x)
 {
 	if (new_x < 0) {
 		new_x = new_x * (-1);
@@ -29,7 +29,7 @@ void CVertex::SetX(int new_x)
 }
 
 //　頂点のY座標を書き込む
-void CVertex::SetY(int new_y)
+void CVertex::SetY(double new_y)
 {
 	if (new_y < 0) {
 		new_y = new_y * (-1);
@@ -51,19 +51,19 @@ void CVertex::SetXY(int new_x, int new_y)
 }
 
 //　頂点のX座標を読み込む込む
-int CVertex::GetX()
+double CVertex::GetX()
 {
 	return x;
 }
 
 //　頂点のY座標を読み込む
-int CVertex::GetY()
+double CVertex::GetY()
 {
 	return y;
 }
 
 //　頂点のX・Y座標の両方を読み込む
-void CVertex::GetXY(int* get_x, int* get_y)
+void CVertex::GetXY(double* get_x, double* get_y)
 {
 	get_x = &x;
 	get_y = &y;

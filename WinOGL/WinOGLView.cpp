@@ -34,8 +34,6 @@ END_MESSAGE_MAP()
 
 CWinOGLView::CWinOGLView() noexcept
 {
-	// TODO: 構築コードをここに追加します。
-
 }
 
 CWinOGLView::~CWinOGLView()
@@ -70,6 +68,7 @@ void CWinOGLView::OnDraw(CDC* pDC)
 	*/
 
 	glVertex2f(clickX, clickY);
+	//AC.SetVertex(clickX, clickY);
 
 	AC.Draw();
 
@@ -125,13 +124,13 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 
 	// 縦長のとき
 	if (w > h) {
-		raito = (float)w / h;
+		raito = (double)w / h;
 		clickX = clickX * raito;
 		glOrtho(-raito, raito, -1, 1, -100, 100);
 	}
 	// 横長のとき
 	else {
-		raito = (float)h / w;
+		raito = (double)h / w;
 		clickY = clickY * raito;
 		glOrtho(-1, 1, -raito, raito, -100, 100);
 	}
@@ -201,16 +200,16 @@ void CWinOGLView::OnSize(UINT nType, int cx, int cy)
 	glLoadIdentity();
 
 	// 問6.2
-	float raito = 1;
+	double raito = 1;
 
 	// 縦長のとき
 	if (cx < cy) {
-		raito = (float)cy / cx;
+		raito = (double)cy / cx;
 		glOrtho(-1, 1, -raito, raito, -100, 100);
 	}
 	// 横長のとき
 	else{
-		raito = (float)cx / cy;
+		raito = (double)cx / cy;
 		glOrtho(-raito, raito, -1, 1, -100, 100);
 	}
 
