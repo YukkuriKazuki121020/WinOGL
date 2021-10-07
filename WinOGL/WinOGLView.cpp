@@ -67,8 +67,7 @@ void CWinOGLView::OnDraw(CDC* pDC)
 	glVertex2f(-0.5, -0.5);
 	*/
 
-	glVertex2f(clickX, clickY);
-	//AC.SetVertex(clickX, clickY);
+	//glVertex2f(clickX, clickY);
 
 	AC.Draw();
 
@@ -134,6 +133,8 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 		clickY = clickY * raito;
 		glOrtho(-1, 1, -raito, raito, -100, 100);
 	}
+
+	AC.SetVertex(clickX, clickY);
 
 	RedrawWindow();
 

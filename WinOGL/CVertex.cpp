@@ -22,31 +22,19 @@ CVertex::~CVertex()
 //　頂点のX座標を書き込む
 void CVertex::SetX(double new_x)
 {
-	if (new_x < 0) {
-		new_x = new_x * (-1);
-	}
 	x = new_x;
 }
 
 //　頂点のY座標を書き込む
 void CVertex::SetY(double new_y)
 {
-	if (new_y < 0) {
-		new_y = new_y * (-1);
-	}
 	y = new_y;
 }
 
 //　頂点のX・Y座標の両方を書き込む
-void CVertex::SetXY(int new_x, int new_y)
+void CVertex::SetXY(double new_x, double new_y)
 {
-	if (new_x < 0) {
-		new_x = new_x * (-1);
-	}
 	x = new_x;
-	if (new_y < 0) {
-		new_y = new_y * (-1);
-	}
 	y = new_y;
 }
 

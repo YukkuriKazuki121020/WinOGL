@@ -8,7 +8,10 @@ public :
 	CAdminControl();
 	~CAdminControl();
 
+	// ’¸“_‚ğ’Ç‰Á‚·‚éŠÖ”
+	void SetVertex(double x,double y);
 	void Draw();
+
 private:
 	CVertex* vertex_head;
 };
