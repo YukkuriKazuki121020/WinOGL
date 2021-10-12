@@ -3,7 +3,7 @@
 
 CAdminControl::CAdminControl()
 {
-	vertex_head = new CVertex();
+	vertex_head = NULL;
 }
 
 CAdminControl::~CAdminControl()
@@ -12,7 +12,18 @@ CAdminControl::~CAdminControl()
 
 void CAdminControl::SetVertex(double x, double y)
 {
-	vertex_head->SetNext(new CVertex(x, y, NULL));
+	CVertex* newV = new CVertex;
+	newV->SetXY(x, y);
+	if (vertex_head == NULL) {
+		vertex_head = newV;
+	}	
+	else {
+		CVertex* v = vertex_head;
+		while (v->GetNext() != NULL) {
+			v = v->GetNext();
+		}
+		v->SetNext(newV);
+	}
 }
 
 void CAdminControl::Draw()
@@ -23,8 +34,10 @@ void CAdminControl::Draw()
 	glPointSize(10);
 	glBegin(GL_POINTS);
 	
-	if (vertex_head->GetNext() != NULL) {
-		glVertex2f(vertex_head->GetNext()->GetX(), vertex_head->GetNext()->GetY());
+	if (vertex_head != NULL) {
+		for (CVertex* nowV = vertex_head; nowV != NULL; nowV = nowV->GetNext()) {
+			glVertex2f(nowV->GetX(), nowV->GetY());
+		}
 	}
 
 	glEnd();
