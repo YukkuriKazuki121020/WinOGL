@@ -1,45 +1,58 @@
 #include "pch.h"
 #include "CAdminControl.h"
+#include <math.h>
 
 CAdminControl::CAdminControl()
 {
-	vertex_head = NULL;
+	shape_keeper = new CShape;
 }
 
 CAdminControl::~CAdminControl()
 {
+	FreeShape();
 }
 
-void CAdminControl::SetVertex(double x, double y)
+void CAdminControl::SetVertex(double x, double y, double raito)
 {
-	CVertex* newV = new CVertex;
-	newV->SetXY(x, y);
-	if (vertex_head == NULL) {
-		vertex_head = newV;
-	}	
-	else {
-		CVertex* v = vertex_head;
-		while (v->GetNext() != NULL) {
-			v = v->GetNext();
+	CShape* s = shape_keeper;
+	if (s != NULL) {
+		while (s->GetNext() != NULL) {
+			s = s->GetNext();
 		}
-		v->SetNext(newV);
+		s->DecideEndPoint(x, y, raito);
+		if (s->IsPolygon()) { // 多角形なら
+			// 現在の点を一つ目の点と接続
+			CShape* new_shape = new CShape;
+			s->SetNext(new_shape); // 次の形を生成
+		}
+		else {
+			s->SetVertex(x, y);
+		}
 	}
+	
 }
 
 void CAdminControl::Draw()
 {
+	if (shape_keeper != NULL) {
+		if (shape_keeper->GetVertexHead() != NULL) {
+			for (CShape* nowS = shape_keeper; nowS != NULL; nowS = nowS->GetNext()) {
+				nowS->DrawVertices();
 
-	glColor3f(1.0, 1.0, 1.0);
-	
-	glPointSize(10);
-	glBegin(GL_POINTS);
-	
-	if (vertex_head != NULL) {
-		for (CVertex* nowV = vertex_head; nowV != NULL; nowV = nowV->GetNext()) {
-			glVertex2f(nowV->GetX(), nowV->GetY());
+				nowS->DrawLines();
+			}
 		}
 	}
 
-	glEnd();
+}
 
+void CAdminControl::FreeShape() {
+	CShape* temp = NULL;
+	CShape* vp = shape_keeper;
+	while (shape_keeper != NULL)
+	{
+		temp = shape_keeper->GetNext();
+		delete shape_keeper;
+		shape_keeper = temp;
+	}
 }
