@@ -26,7 +26,28 @@ void CAdminControl::SetVertex(double x, double y, double raito)
 			s->SetNext(new_shape); // ŽŸ‚ÌŒ`‚ð¶¬
 		}
 		else {
-			s->SetVertex(x, y);
+			if (!s->IsCrossing(x, y)) {
+				CVertex* vertex_tmp;
+				for (CShape* nowS = shape_keeper; nowS != NULL; nowS = nowS->GetNext()) {
+					if (nowS == s) {
+						s->SetVertex(x, y);
+						break;
+					}
+					if (s->GetVertexTail() == NULL) {// ˆê‚Â‚à“_‚ª‘Å‚½‚ê‚Ä‚¢‚È‚¢‚È‚ç
+						vertex_tmp = new CVertex(x, y, NULL);
+						if (nowS->IsInside(vertex_tmp)) {
+							break;
+						}
+					}
+					else {
+						vertex_tmp = s->GetVertexTail();
+					}
+					if (nowS->IsCrossing4OtherShape(CVector(vertex_tmp, new CVertex(x, y, NULL)))) {
+						break;
+					}
+				}
+			}
+			
 		}
 	}
 	
@@ -56,3 +77,4 @@ void CAdminControl::FreeShape() {
 		shape_keeper = temp;
 	}
 }
+

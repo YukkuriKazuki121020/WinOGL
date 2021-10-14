@@ -2,6 +2,7 @@
 #include <gl/GL.h>
 #include "CVertex.h"
 #include "CShape.h"
+#include "CVector.h"
 
 class CAdminControl
 {
