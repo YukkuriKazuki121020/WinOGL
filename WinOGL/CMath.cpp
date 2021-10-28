@@ -30,8 +30,8 @@ double CMath::CalcInnerProduct2d(CVector va, CVector vb)
 	double y = va.CalcPositionVector()->GetY();
 	CVertex a(x, y, NULL);
 
-	x = va.CalcPositionVector()->GetX();
-	y = va.CalcPositionVector()->GetY();
+	x = vb.CalcPositionVector()->GetX();
+	y = vb.CalcPositionVector()->GetY();
 	CVertex b(x, y, NULL);
 	return a.GetX() * b.GetX() + a.GetY() * b.GetY();
 }
@@ -61,34 +61,38 @@ bool CMath::IsCrossing(CShape* targetShape, CVector vec)
 	return false;
 }
 
-/*
-bool CMath::IsCrossingForOtherShape(CShape* targetShape, CVector vec)
-{
-	for (CVector* nowVec = targetShape->GetVectorHead(); nowVec != NULL; nowVec = nowVec->GetNext()) {
-		if (!vec.IsZeroVector()) {// ゼロベクトルじゃないなら
-			if (IsCrossingCore(*nowVec, vec)) {// 交差判定
-				return true;
-			}
-		}
-	}
-	return false;
-}
-*/
-
-bool CMath::IsInside(CShape* targetShape, CVertex* clickPoint)
+bool CMath::IsInside(CShape* targetShape, CVertex* innerVertex)
 {
 	double theta = 0; // θ（角度）
 	CVertex* nowVer = targetShape->GetVertexHead();
 	CVector va;
 	CVector vb;
 	do {
-		va = CVector(clickPoint,nowVer);
+		va = CVector(innerVertex,nowVer);
 		nowVer = nowVer->GetNext();
-		vb = CVector(clickPoint, nowVer);
-		theta += atan2(targetShape->CalcCrossProduct2d(va, vb), targetShape->CalcInnerProduct2d(va, vb));
+		vb = CVector(innerVertex, nowVer);
+		theta += atan2(CalcCrossProduct2d(va, vb), CalcInnerProduct2d(va, vb));
 	} while (nowVer->GetNext() != NULL);
 	
 	return abs(2 * M_PI - abs(theta)) <= 0.1;
+}
+
+bool CMath::IsInsideForAll(CShape* closingShape, CShape* targetShapes, CVertex* clickVertex)
+{
+	CShape* tmpShape = new CShape();// closingShapeにクリックした座標を頂点として追加した形状
+	for (CVertex* nowVer = closingShape->GetVertexHead(); nowVer != NULL; nowVer = nowVer->GetNext()) {// closingShapeの頂点をコピー（頂点を追加していくとベクトルも追加されるので、頂点のコピーのみでよい）
+		tmpShape->SetVertex(nowVer->GetX(), nowVer->GetY());
+	}
+	tmpShape->SetVertex(clickVertex->GetX(), clickVertex->GetY());
+	for (CShape* nowS = targetShapes; nowS != closingShape; nowS = nowS->GetNext()) {
+		for (CVertex* nowTargetShapeVer = nowS->GetVertexHead(); nowTargetShapeVer != NULL; nowTargetShapeVer = nowTargetShapeVer->GetNext()) {
+			// nowTargetShapeVer:現在見ているtargetShapesの点を格納。
+			if (IsInside(tmpShape, nowTargetShapeVer)) {
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 bool CMath::IsCrossingCore(CVector va, CVector vb)

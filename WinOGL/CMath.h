@@ -17,8 +17,8 @@ public:
 	static double CalcInnerProduct2d(CVector va, CVector vb);// 内積（二次元）
 	static double CalcCrossProduct2d(CVector va, CVector vb);// 外積（二次元）
 	static bool IsCrossing(CShape* targetShape, CVector vec);// 交差判定（形状のすべての辺について）の関数
-	static bool IsCrossingForOtherShape(CShape* targetShape, CVector vec);// 交差判定（他の形状との交差判定）の関数
-	static bool IsInside(CShape* targetShape, CVertex* clickPoint);
+	static bool IsInside(CShape* targetShape, CVertex* innerVertex);// 判定
+	static bool IsInsideForAll(CShape* closingShape, CShape* targetShapes, CVertex* clickVertex);// 内外判定
 
 private:
 	static bool IsCrossingCore(CVector va, CVector vb);// 交差判定の内部

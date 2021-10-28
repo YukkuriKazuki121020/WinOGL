@@ -25,18 +25,18 @@ CShape::~CShape()
 
 void CShape::SetVertex(double x, double y)
 {
-	CVertex* newV = new CVertex(x, y, NULL);
+	CVertex* newVer = new CVertex(x, y, NULL);
 	if (vertex_head == NULL) {
-		vertex_head = newV;
+		vertex_head = newVer;
 	}
 	else {
-		vertex_tail->SetNext(newV);
+		vertex_tail->SetNext(newVer);
 	}
 	vertex_cnt++;
 	if (vertex_cnt >= 2) {
-		SetVector(newV);
+		SetVector(newVer);
 	}
-	vertex_tail = newV;
+	vertex_tail = newVer;
 }
 
 void CShape::DrawVertices()
