@@ -3,9 +3,7 @@
 
 CVertex::CVertex()
 {
-	x = 0;
-	y = 0;
-	next_vertex = NULL;
+	CVertex(0,0,NULL);
 }
 
 CVertex::CVertex(double new_x, double new_y, CVertex* new_next)

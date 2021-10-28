@@ -3,7 +3,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "CShape.h"
-
+#define CONNECT_DISTANCE 0.2
 
 CShape::CShape()
 {
@@ -13,6 +13,7 @@ CShape::CShape()
 	vertex_tail = NULL;
 	next_shape = NULL;
 	vector_head = NULL;
+	vector_tail = vector_head;
 	end_vertex_set = false;
 }
 
@@ -24,20 +25,15 @@ CShape::~CShape()
 
 void CShape::SetVertex(double x, double y)
 {
-	CVertex* newV = new CVertex;
-	newV->SetXY(x, y);
+	CVertex* newV = new CVertex(x, y, NULL);
 	if (vertex_head == NULL) {
 		vertex_head = newV;
 	}
 	else {
-		CVertex* v = vertex_head;
-		while (v->GetNext() != NULL) {
-			v = v->GetNext();
-		}
-		v->SetNext(newV);
+		vertex_tail->SetNext(newV);
 	}
 	vertex_cnt++;
-	if (vertex_cnt > 1) {
+	if (vertex_cnt >= 2) {
 		SetVector(newV);
 	}
 	vertex_tail = newV;
@@ -52,9 +48,6 @@ void CShape::DrawVertices()
 	if (vertex_head != NULL) {
 		for (CVertex* nowVer = vertex_head; nowVer != NULL; nowVer = nowVer->GetNext()) {
 			glVertex2f(nowVer->GetX(), nowVer->GetY());
-			if (nowVer->GetNext() != NULL) {
-				glVertex2f(nowVer->GetNext()->GetX(), nowVer->GetNext()->GetY());
-			}
 		}
 	}
 
@@ -95,25 +88,37 @@ CShape* CShape::GetNext()
 	return next_shape;
 }
 
-void CShape::DecideEndPoint(double x, double y, double raito) {
-	if (vertex_cnt >= 3) { // 点の個数が三つ以上なら（最後クリックする点が一つ目の点とすると、多角形は点が三つ以上であるため。）
-		if (!IsCrossing(x, y)) {
-			double distance = sqrt(pow(vertex_head->GetX() - x, 2) + pow(vertex_head->GetY() - y, 2)) * raito;
-			if (distance <= 0.2) { // クリックした座標と一つ目の点との距離が10以下なら
-				CVertex* nowVer = vertex_head;
-				while (nowVer->GetNext() != NULL) {
-					nowVer = nowVer->GetNext();
-				}
-				CVertex* endV = new CVertex(vertex_head->GetX(), vertex_head->GetY(), NULL);
-				nowVer->SetNext(endV); // 終点を始点に
-				end_vertex_set = true;
-			}
-		}
-		
-	}
+CVector* CShape::GetVectorHead()
+{
+	return vector_head;
 }
 
-bool CShape::IsPolygon() {
+CVector* CShape::GetVectorTail()
+{
+	return vector_tail;
+}
+
+bool CShape::DamnAimChecker(CVertex clickPoint, double ratio)
+{
+	if (vertex_cnt >= 3) { // 点の個数が三つ以上なら（最後クリックする点が一つ目の点とすると、多角形は点が三つ以上であるため。）
+		double distance = sqrt(pow(vertex_head->GetX() - clickPoint.GetX(), 2) + pow(vertex_head->GetY() - clickPoint.GetY(), 2)) * ratio;
+		if (distance <= CONNECT_DISTANCE) { // クリックした座標と一つ目の点との距離が0.2以下なら
+			return true;
+		}
+	}
+	return false;
+}
+
+void CShape::DecideEndPoint(double x, double y, double ratio) {
+	CVertex* endV = new CVertex(vertex_head->GetX(), vertex_head->GetY(), NULL);
+	vertex_tail->SetNext(endV); // 終点を始点に
+	SetVector(endV);
+				
+	end_vertex_set = true;
+}
+
+bool CShape::GetEndVertexSet()
+{
 	return end_vertex_set;
 }
 
@@ -121,18 +126,20 @@ int CShape::GetVertexCnt() {
 	return vertex_cnt;
 }
 
-void CShape::SetVector(CVertex* newV) {
-	CVector* newVec = new CVector(vertex_tail, newV);
+int CShape::GetVectorCnt()
+{
+	return vector_cnt;
+}
+
+void CShape::SetVector(CVertex* newVer) {
+	CVector* newVec = new CVector(vertex_tail, newVer);
 	if (vector_head == NULL) {
 		vector_head = newVec;
+		vector_tail = vector_head;
 	}
 	else {
-		CVector* nowVec = vector_head;
-		while (nowVec->GetNext() != NULL)
-		{
-			nowVec = nowVec->GetNext();
-		}
-		nowVec->SetNext(newVec);
+		vector_tail->SetNext(newVec);
+		vector_tail = vector_tail->GetNext();
 	}
 	vector_cnt++;
 }
@@ -162,7 +169,8 @@ double CShape::CalcCrossProduct2d(CVector va, CVector vb)
 }
 
 bool CShape::IsCrossing(double x, double y) {
-	if (vector_cnt > 1) {
+	// 頂点が2つ以上なら
+	if (vector_cnt >= 2) {
 		CVector tmpVec(vertex_tail, new CVertex(x, y, NULL));
 		for (CVector* nowVec = vector_head; nowVec != NULL; nowVec = nowVec->GetNext()) {
 			if (nowVec->GetEndPoint()->GetX() != tmpVec.GetStartPoint()->GetX()
@@ -176,10 +184,10 @@ bool CShape::IsCrossing(double x, double y) {
 	return false;
 }
 
-bool CShape::IsCrossing4OtherShape(CVector vec) {
+bool CShape::IsCrossingForOtherShape(CVector vec) {
 	for (CVector* nowVec = vector_head; nowVec != NULL; nowVec = nowVec->GetNext()) {
-		if (!vec.IsZeroVector()) {
-			if (IsCrossingCore(*nowVec, vec)) {
+		if (!vec.IsZeroVector()) {// ゼロベクトルじゃないなら
+			if (IsCrossingCore(*nowVec, vec)) {// 交差判定
 				return true;
 			}
 		}
@@ -206,10 +214,19 @@ bool CShape::IsCrossingCore(CVector va, CVector vb)
 	}
 }
 
-bool CShape::IsInside(CVertex* ver)
+bool CShape::IsInside(CShape* targetShape, CVertex* clickPoint)
 {
 	double theta = 0; // θ（角度）
-	return abs(theta) == 2 * M_PI;
+	CVertex* nowVer = targetShape->vertex_head;
+	CVector va(clickPoint, nowVer);
+	nowVer = nowVer->GetNext();
+	while (nowVer != NULL) {
+		CVector vb(clickPoint, nowVer);
+		theta += atan2(targetShape->CalcCrossProduct2d(va, vb), targetShape->CalcInnerProduct2d(va, vb));
+		va = vb;
+		nowVer = nowVer->GetNext();
+	}
+	return abs(2 * M_PI - theta) <= 0.1 ;
 }
 
 //　動的確保したVertexを解放する

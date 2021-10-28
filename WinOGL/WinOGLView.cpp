@@ -130,22 +130,22 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 	clickX = clickX * 2 - 1;
 	clickY = clickY * 2 - 1;
 
-	double raito = 1;
+	double ratio = 1;
 
 	// 縦長のとき
 	if (w > h) {
-		raito = (double)w / h;
-		clickX = clickX * raito;
-		glOrtho(-raito, raito, -1, 1, -100, 100);
+		ratio = (double)w / h;
+		clickX = clickX * ratio;
+		glOrtho(-ratio, ratio, -1, 1, -100, 100);
 	}
 	// 横長のとき
 	else {
-		raito = (double)h / w;
-		clickY = clickY * raito;
-		glOrtho(-1, 1, -raito, raito, -100, 100);
+		ratio = (double)h / w;
+		clickY = clickY * ratio;
+		glOrtho(-1, 1, -ratio, ratio, -100, 100);
 	}
 
-	AC.SetVertex(clickX, clickY ,raito);
+	AC.SetVertex(clickX, clickY ,ratio);
 
 	RedrawWindow();
 
@@ -212,17 +212,17 @@ void CWinOGLView::OnSize(UINT nType, int cx, int cy)
 	glLoadIdentity();
 
 	// 問6.2
-	double raito = 1;
+	double ratio = 1;
 
 	// 縦長のとき
 	if (cx < cy) {
-		raito = (double)cy / cx;
-		glOrtho(-1, 1, -raito, raito, -100, 100);
+		ratio = (double)cy / cx;
+		glOrtho(-1, 1, -ratio, ratio, -100, 100);
 	}
 	// 横長のとき
 	else{
-		raito = (double)cx / cy;
-		glOrtho(-raito, raito, -1, 1, -100, 100);
+		ratio = (double)cx / cy;
+		glOrtho(-ratio, ratio, -1, 1, -100, 100);
 	}
 
 	glMatrixMode(GL_MODELVIEW);

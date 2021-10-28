@@ -11,11 +11,12 @@ public :
 	~CAdminControl();
 
 	// ’¸“_‚ğ’Ç‰Á‚·‚éŠÖ”
-	void SetVertex(double x,double y ,double raito);
+	void SetVertex(double x,double y ,double ratio);
 	void Draw();
 
 private:
-	CShape* shape_keeper;
+	CShape* shape_head;
+	CShape* shape_tail;
 	void FreeShape();
 };
 
