@@ -28,12 +28,26 @@ BEGIN_MESSAGE_MAP(CWinOGLView, CView)
 	ON_WM_DESTROY()
 	ON_WM_ERASEBKGND()
 	ON_WM_SIZE()
+	ON_COMMAND(ID_XY, &CWinOGLView::OnXy)
+	ON_COMMAND(ID_EDIT, &CWinOGLView::OnEdit)
+	ON_WM_LBUTTONUP()
+	ON_WM_MOUSEMOVE()
+	ON_COMMAND(ID_MAKE_EDGE_VERTEX, &CWinOGLView::OnMakeEdgeVertex)
+	ON_UPDATE_COMMAND_UI(ID_XY, &CWinOGLView::OnUpdateXy)
+	ON_UPDATE_COMMAND_UI(ID_EDIT, &CWinOGLView::OnUpdateEdit)
+	ON_UPDATE_COMMAND_UI(ID_MAKE_EDGE_VERTEX, &CWinOGLView::OnUpdateMakeEdgeVertex)
+	ON_COMMAND(ID_KILL_EDGE_VERTEX, &CWinOGLView::OnKillEdgeVertex)
+	ON_UPDATE_COMMAND_UI(ID_KILL_EDGE_VERTEX, &CWinOGLView::OnUpdateKillEdgeVertex)
+	ON_COMMAND(ID_DEBUG, &CWinOGLView::OnDebug)
+	ON_UPDATE_COMMAND_UI(ID_DEBUG, &CWinOGLView::OnUpdateDebug)
 END_MESSAGE_MAP()
 
 // CWinOGLView コンストラクション/デストラクション
 
 CWinOGLView::CWinOGLView() noexcept
 {
+	clickX = 0;
+	clickY = 0;
 }
 
 CWinOGLView::~CWinOGLView()
@@ -58,29 +72,8 @@ void CWinOGLView::OnDraw(CDC* pDC)
 	wglMakeCurrent(pDC->m_hDC, m_hRC);
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT /* | GL_DEPTH_BUFFER_BIT */);
-
-
-	/* 問6.1 頂点を4つ設定し、四角形を描画
-	glVertex2f(-0.5, 0.5);
-	glVertex2f(0.5, 0.5);
-	glVertex2f(0.5, -0.5);
-	glVertex2f(-0.5, -0.5);
-	*/
-
-	/*
-	glBegin(GL_LINES);
-
-	glVertex2f(0.0, 0.0);
-	glVertex2f(1.0, 1.0);
-
-	glEnd();
-	*/
-
-	//glVertex2f(clickX, clickY);
-
-	glColor3f(1.0, 1.0, 1.0);
-
-	AC.Draw();
+	
+	AC.Draw(clickX, clickY);
 
 	//glEnd();//ここまで描画の合図
 
@@ -130,7 +123,7 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 	clickX = clickX * 2 - 1;
 	clickY = clickY * 2 - 1;
 
-	double ratio = 1;
+	ratio = 1;
 
 	// 縦長のとき
 	if (w > h) {
@@ -144,12 +137,86 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 		clickY = clickY * ratio;
 		glOrtho(-1, 1, -ratio, ratio, -100, 100);
 	}
+	AC.SetAllSelectedFlag(false);
 
+	AC.MEV(clickX, clickY);
+	AC.KEV(clickX, clickY);
+
+	AC.dragging = true;
+	AC.lButtonClicking = true;
 	AC.SetVertex(clickX, clickY ,ratio);
+
+	if (AC.kevFlag) {
+		AC.debugFlag = false;
+	}
 
 	RedrawWindow();
 
 	CView::OnLButtonDown(nFlags, point);
+}
+
+
+void CWinOGLView::OnMouseMove(UINT nFlags, CPoint point)
+{
+	if (AC.lButtonClicking) {
+		AC.dragging = true;
+	}
+	else {
+		AC.dragging = false;
+	}
+
+	if (AC.editFlag) {
+		if(AC.dragging){
+			double oldClickX = clickX;
+			double oldClickY = clickY;
+			CRect rect;
+			GetClientRect(rect); // 描画領域の大きさを取得
+
+			int w = rect.Width();
+			int h = rect.Height();
+
+			// 正規化変換
+			clickX = (double)point.x / (double)w;
+			clickY = (double)point.y / (double)h;
+			clickY = 1 - clickY;
+			clickX = clickX * 2 - 1;
+			clickY = clickY * 2 - 1;
+
+			ratio = 1;
+
+			// 縦長のとき
+			if (w > h) {
+				ratio = (double)w / h;
+				clickX = clickX * ratio;
+				glOrtho(-ratio, ratio, -1, 1, -100, 100);
+			}
+			// 横長のとき
+			else {
+				ratio = (double)h / w;
+				clickY = clickY * ratio;
+				glOrtho(-1, 1, -ratio, ratio, -100, 100);
+			}
+
+			double dClickX = clickX - oldClickX;// clickXの移動量
+			double dClickY = clickY - oldClickY;// clickYの移動量
+
+			AC.Move(dClickX, dClickY);
+			AC.Draw(clickX, clickY);
+		}
+	}
+	RedrawWindow();
+
+	CView::OnMouseMove(nFlags, point);
+}
+
+
+void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	AC.lButtonClicking = false;
+	AC.dragging = false;
+	RedrawWindow();
+
+	CView::OnLButtonUp(nFlags, point);
 }
 
 
@@ -212,7 +279,7 @@ void CWinOGLView::OnSize(UINT nType, int cx, int cy)
 	glLoadIdentity();
 
 	// 問6.2
-	double ratio = 1;
+	ratio = 1;
 
 	// 縦長のとき
 	if (cx < cy) {
@@ -230,4 +297,107 @@ void CWinOGLView::OnSize(UINT nType, int cx, int cy)
 	RedrawWindow();
 	wglMakeCurrent(clientDC.m_hDC,NULL);
 	
+}
+
+
+void CWinOGLView::OnEdit()
+{
+	AC.editFlag = !AC.editFlag;
+	AC.mevFlag = false;
+	AC.kevFlag = false;
+	clickX = 10;
+	clickY = 10;
+}
+
+
+void CWinOGLView::OnUpdateEdit(CCmdUI* pCmdUI)
+{
+	// AC.editFlagがtrueのときボタンが沈む
+	if (AC.editFlag) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
+}
+
+
+void CWinOGLView::OnXy()
+{
+	AC.axisFlag = !AC.axisFlag;
+
+	RedrawWindow();
+}
+
+
+void CWinOGLView::OnUpdateXy(CCmdUI* pCmdUI)
+{
+	// AC.axisFlagがtrueのときボタンが沈む
+	if (AC.axisFlag) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
+}
+
+
+void CWinOGLView::OnMakeEdgeVertex()
+{
+	AC.mevFlag = !AC.mevFlag;
+	if (AC.mevFlag) {
+		AC.kevFlag = false;
+	}
+}
+
+
+void CWinOGLView::OnUpdateMakeEdgeVertex(CCmdUI* pCmdUI)
+{
+	// AC.mevFlagがtrueのときボタンが沈む
+	if (AC.mevFlag) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
+}
+
+
+void CWinOGLView::OnKillEdgeVertex()
+{
+	AC.kevFlag = !AC.kevFlag;
+	if (AC.kevFlag) {
+		AC.mevFlag = false;
+	}
+}
+
+
+void CWinOGLView::OnUpdateKillEdgeVertex(CCmdUI* pCmdUI)
+{
+	// AC.mevFlagがtrueのときボタンが沈む
+	if (AC.kevFlag) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
+}
+
+
+void CWinOGLView::OnDebug()
+{
+	AC.debugFlag = true;
+	AC.Debug();
+}
+
+
+void CWinOGLView::OnUpdateDebug(CCmdUI* pCmdUI)
+{
+	// AC.mevFlagがtrueのときボタンが沈む
+	if (AC.debugFlag) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
 }

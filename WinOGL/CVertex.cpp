@@ -3,13 +3,25 @@
 
 CVertex::CVertex()
 {
-	CVertex(0,0,NULL);
+	//CVertex(0,0);
+	SetXY(0, 0);
+	SetNext(NULL);
+	selected_flag = false;
+}
+
+CVertex::CVertex(double new_x, double new_y)
+{
+	//CVertex(new_x, new_y, NULL);
+	SetXY(new_x, new_y);
+	SetNext(NULL);
+	selected_flag = false;
 }
 
 CVertex::CVertex(double new_x, double new_y, CVertex* new_next)
 {
 	SetXY(new_x, new_y);
 	SetNext(new_next);
+	selected_flag = false;
 }
 
 CVertex::~CVertex()
@@ -32,8 +44,8 @@ void CVertex::SetY(double new_y)
 //　頂点のX・Y座標の両方を書き込む
 void CVertex::SetXY(double new_x, double new_y)
 {
-	x = new_x;
-	y = new_y;
+	SetX(new_x);
+	SetY(new_y);
 }
 
 //　頂点のX座標を読み込む込む
@@ -65,4 +77,20 @@ void CVertex::SetNext(CVertex* new_next)
 CVertex* CVertex::GetNext()
 {
 	return next_vertex;
+}
+
+void CVertex::SetSelectedFlag(bool selected_flag)
+{
+	this->selected_flag = selected_flag;
+}
+
+bool CVertex::GetSelectedFlag()
+{
+	return selected_flag;
+}
+
+void CVertex::Insert(CVertex* insertVer)
+{
+	insertVer->SetNext(next_vertex);
+	SetNext(insertVer);
 }

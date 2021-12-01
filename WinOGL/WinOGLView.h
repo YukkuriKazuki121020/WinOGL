@@ -46,6 +46,7 @@ private:
 	HGLRC m_hRC;
 	double clickX;
 	double clickY;
+	double ratio;
 	CAdminControl AC;
 
 public:
@@ -54,6 +55,18 @@ public:
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 
+	afx_msg void OnXy();
+	afx_msg void OnEdit();
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg void OnMakeEdgeVertex();
+	afx_msg void OnUpdateXy(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateEdit(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateMakeEdgeVertex(CCmdUI* pCmdUI);
+	afx_msg void OnKillEdgeVertex();
+	afx_msg void OnUpdateKillEdgeVertex(CCmdUI* pCmdUI);
+	afx_msg void OnDebug();
+	afx_msg void OnUpdateDebug(CCmdUI* pCmdUI);
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン

@@ -3,7 +3,7 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
-#define CONNECT_DISTANCE 0.2
+#define CONNECT_DISTANCE 0.05
 
 CMath::CMath()
 {
@@ -13,11 +13,114 @@ CMath::~CMath()
 {
 }
 
-bool CMath::DamnAimChecker(CShape* targetShape, CVertex clickPoint, double ratio)
+double CMath::CalcDistance(CVector* v)
+{
+	return sqrt(pow(v->CalcPositionVector()->GetX(), 2) + pow(v->CalcPositionVector()->GetY(), 2));
+}
+
+bool CMath::JudgeDistance(CVertex* Ver, CVertex* clickPoint)
+{
+	return CVector(Ver, clickPoint).CalcVectorSize() <= CONNECT_DISTANCE;
+}
+
+bool CMath::JudgeSelectedForPoint(CVertex* Ver, CVertex* clickPoint)
+{
+	if (JudgeDistance(Ver, clickPoint)) {
+		Ver->SetSelectedFlag(true);
+		return true;
+	}
+	return false;
+}
+
+bool CMath::JudgeSelectedForLine(CVector* Vec, CVertex* clickPoint)
+{
+	if (JudgeSelectedForPoint(Vec->GetStartPoint(), clickPoint)) {// 始点の選択判定
+		return false;
+	}
+	if (JudgeSelectedForPoint(Vec->GetEndPoint(), clickPoint)) {// 終点の選択判定
+		return false;
+	}
+	CVector va(Vec->GetStartPoint(), clickPoint);
+	CVector vb(Vec->GetEndPoint(), Vec->GetStartPoint());
+	double d = CMath::CalcCrossProduct2d(va, vb) / vb.CalcVectorSize();
+
+	va = CVector(Vec->GetStartPoint(), clickPoint);
+	double s = CalcInnerProduct2d(va, *Vec) / CalcInnerProduct2d(*Vec, *Vec);
+	if ((abs(d) <= CONNECT_DISTANCE) && (s >= 0 && s <= 1)) {
+		Vec->SetSelectedFlag(true);
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+bool CMath::JudgeSelectedForShape(CShape* Shape, CVertex* clickPoint)
+{
+	if (Shape->GetEndVertexSet()) {//形状が閉じているとき
+		for (CVector* nowVec = Shape->GetVectorHead(); nowVec != NULL; nowVec = nowVec->GetNext()) {
+			if (JudgeSelectedForPoint(nowVec->GetStartPoint(), clickPoint)) {// 始点の選択判定
+				Shape->SetSelectedFlag(false);
+				return false;
+			}
+			if (JudgeSelectedForPoint(nowVec->GetEndPoint(), clickPoint)) {// 終点の選択判定
+				Shape->SetSelectedFlag(false);
+				return false;
+			}
+			if (JudgeSelectedForLine(nowVec, clickPoint)) {//辺の選択判定
+				Shape->SetSelectedFlag(false);
+				return false;
+			}
+		}
+		if (IsInside(Shape, clickPoint)) {
+			Shape->SetSelectedFlag(true);
+			return true;
+		}
+		else {
+			Shape->SetSelectedFlag(false);
+			return false;
+		}
+	}
+	return false;
+}
+
+CVertex* CMath::GetSelectedPoint(CShape* targetShape, CVertex* clickPoint)
+{
+	for (CVertex* nowVer = targetShape->GetVertexHead(); nowVer != NULL; nowVer = nowVer->GetNext()) {
+		if (JudgeSelectedForPoint(nowVer, clickPoint)) {
+			if (nowVer == targetShape->GetVertexHead()) {
+				nowVer = targetShape->GetVertexTail();
+			}
+			return nowVer;
+		}
+	}
+	return NULL;
+}
+
+CVector* CMath::GetSelectedLine(CShape* targetShape, CVertex* clickPoint)
+{
+	for (CVector* nowVec = targetShape->GetVectorHead(); nowVec != NULL; nowVec = nowVec->GetNext()) {
+		if (JudgeSelectedForLine(nowVec, clickPoint)) {
+			return nowVec;
+		}
+	}
+	return NULL;
+}
+
+CShape* CMath::GetSelectedShape(CShape* shape_head, CVertex* clickPoint)
+{
+	for (CShape* nowShape = shape_head; nowShape != NULL; nowShape = nowShape->GetNext()) {
+		if (JudgeSelectedForShape(nowShape, clickPoint)) {
+			return nowShape;
+		}
+	}
+	return NULL;
+}
+
+bool CMath::DamnAimChecker(CShape* targetShape, CVertex clickPoint)
 {
 	if (targetShape->GetVertexCnt() >= 3) { // 点の個数が三つ以上なら（最後クリックする点が一つ目の点とすると、多角形は点が三つ以上であるため。）
-		double distance = sqrt(pow(targetShape->GetVertexHead()->GetX() - clickPoint.GetX(), 2) + pow(targetShape->GetVertexHead()->GetY() - clickPoint.GetY(), 2)) * ratio;
-		if (distance <= CONNECT_DISTANCE) { // クリックした座標と一つ目の点との距離が0.2以下なら
+		if (JudgeDistance(targetShape->GetVertexHead(), &clickPoint)) { // クリックした座標と一つ目の点との距離が0.2以下なら
 			return true;
 		}
 	}
@@ -28,11 +131,11 @@ double CMath::CalcInnerProduct2d(CVector va, CVector vb)
 {
 	double x = va.CalcPositionVector()->GetX();
 	double y = va.CalcPositionVector()->GetY();
-	CVertex a(x, y, NULL);
+	CVertex a(x, y);
 
 	x = vb.CalcPositionVector()->GetX();
 	y = vb.CalcPositionVector()->GetY();
-	CVertex b(x, y, NULL);
+	CVertex b(x, y);
 	return a.GetX() * b.GetX() + a.GetY() * b.GetY();
 }
 
@@ -40,11 +143,11 @@ double CMath::CalcCrossProduct2d(CVector va, CVector vb)
 {
 	double x = va.CalcPositionVector()->GetX();
 	double y = va.CalcPositionVector()->GetY();
-	CVertex a(x, y, NULL);
+	CVertex a(x, y);
 
 	x = vb.CalcPositionVector()->GetX();
 	y = vb.CalcPositionVector()->GetY();
-	CVertex b(x, y, NULL);
+	CVertex b(x, y);
 	return a.GetX() * b.GetY() - b.GetX() * a.GetY();
 }
 

@@ -3,7 +3,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "CShape.h"
-#define CONNECT_DISTANCE 0.2
+#include "CMath.h"
 
 CShape::CShape()
 {
@@ -15,6 +15,9 @@ CShape::CShape()
 	vector_head = NULL;
 	vector_tail = vector_head;
 	end_vertex_set = false;
+	selected_flag = false;
+	selected_flag = false;
+	a_part_selectable = true;
 }
 
 CShape::~CShape()
@@ -41,33 +44,119 @@ void CShape::SetVertex(double x, double y)
 
 void CShape::DrawVertices()
 {
-	//点の描画
-	glPointSize(10);
+	glPointSize(8);
 	glBegin(GL_POINTS);
-
 	if (vertex_head != NULL) {
 		for (CVertex* nowVer = vertex_head; nowVer != NULL; nowVer = nowVer->GetNext()) {
+			glColor3f(1.0, 1.0, 1.0);
 			glVertex2f(nowVer->GetX(), nowVer->GetY());
 		}
 	}
-
 	glEnd();
 }
 
-void CShape::DrawLines() {
-	//辺の描画
+void CShape::DrawLines()
+{
 	glBegin(GL_LINES);
+	for (CVector* nowVec = vector_head; nowVec != NULL; nowVec = nowVec->GetNext()) {
+		glColor3f(1.0, 1.0, 1.0);
+		glVertex2f(nowVec->GetStartPoint()->GetX(), nowVec->GetStartPoint()->GetY());
+		glVertex2f(nowVec->GetEndPoint()->GetX(), nowVec->GetEndPoint()->GetY());
+	}
+	glEnd();
+}
 
-	if (vertex_head != NULL && vertex_head->GetNext() != NULL) {
-		for (CVertex* nowVer = vertex_head; nowVer->GetNext() != NULL; nowVer = nowVer->GetNext()) {
+void CShape::DrawSelectedVertices(CVertex* Ver)
+{
+	//点の描画
+	glPointSize(8);
+	glBegin(GL_POINTS);
+	glColor3f(1.0, 0, 0);
+	if (Ver != NULL && Ver->GetSelectedFlag()) {
+		glVertex2f(Ver->GetX(), Ver->GetY());
+	}	
+	glEnd();
+}
+
+void CShape::DrawSelectedLines(CVector* Vec) {
+	//辺の描画
+
+	glBegin(GL_LINES);
+	glColor3f(1.0, 0, 0);
+	if (Vec != NULL && Vec->GetSelectedFlag()) {
+		glVertex2f(Vec->GetStartPoint()->GetX(), Vec->GetStartPoint()->GetY());
+		glVertex2f(Vec->GetEndPoint()->GetX(), Vec->GetEndPoint()->GetY());
+	}
+	glEnd();
+}
+
+void CShape::DrawSelectedShape()
+{
+	glPointSize(8);
+	glBegin(GL_POINTS);
+	if (vertex_head != NULL) {
+		for (CVertex* nowVer = vertex_head; nowVer != NULL; nowVer = nowVer->GetNext()) {
+			glColor3f(1.0, 0, 0);
 			glVertex2f(nowVer->GetX(), nowVer->GetY());
-			if (nowVer->GetNext() != NULL) {
-				glVertex2f(nowVer->GetNext()->GetX(), nowVer->GetNext()->GetY());
+		}
+	}
+	glEnd();
+	glBegin(GL_LINES);
+	for (CVector* nowVec = vector_head; nowVec != NULL; nowVec = nowVec->GetNext()) {
+		glColor3f(1.0, 0, 0);
+		glVertex2f(nowVec->GetStartPoint()->GetX(), nowVec->GetStartPoint()->GetY());
+		glVertex2f(nowVec->GetEndPoint()->GetX(), nowVec->GetEndPoint()->GetY());
+	}
+	glEnd();
+}
+
+void CShape::Draw(CVertex* clickPoint, bool editFlag, bool dragging)
+{
+	if (editFlag) {
+		if (!dragging) {//マウスをドラッグしているときは選択されているかのフラグの初期化をしない
+			for (CVector* nowVec = vector_head; nowVec != NULL; nowVec = nowVec->GetNext()) {
+				nowVec->SetSelectedFlag(false);
+				nowVec->GetStartPoint()->SetSelectedFlag(false);
+				nowVec->GetEndPoint()->SetSelectedFlag(false);
 			}
 		}
 	}
 
-	glEnd();
+	CVector* selectedLine = CMath::GetSelectedLine(this, clickPoint);
+	CVertex* selectedVer = CMath::GetSelectedPoint(this, clickPoint);
+	CShape* selectedShape = CMath::GetSelectedShape(this, clickPoint);
+
+	DrawLines();
+	if (editFlag) {
+		if (a_part_selectable) {//どこか(頂点、辺、面のいずれか)ひとつでも選択できるとき
+			if (selectedLine != NULL) {
+				a_part_selectable = false;
+			}
+		}
+		DrawSelectedLines(selectedLine);
+	}
+	
+	DrawVertices();
+	if (editFlag) {
+		if (a_part_selectable) {//どこか(頂点、辺、面のいずれか)ひとつでも選択できるとき
+			if (selectedVer != NULL) {
+				a_part_selectable = false;
+			}
+		}
+		DrawSelectedVertices(selectedVer);
+	}
+	
+	if (editFlag) {
+		if (a_part_selectable) {//どこか(頂点、辺、面のいずれか)ひとつでも選択できるとき
+			if (end_vertex_set) {
+				if (selectedShape != NULL) {
+					a_part_selectable = false;
+					DrawSelectedShape();
+				}
+			}
+		}
+	}
+	
 }
 
 CVertex* CShape::GetVertexHead() {
@@ -98,21 +187,9 @@ CVector* CShape::GetVectorTail()
 	return vector_tail;
 }
 
-bool CShape::DamnAimChecker(CVertex clickPoint, double ratio)
-{
-	if (vertex_cnt >= 3) { // 点の個数が三つ以上なら（最後クリックする点が一つ目の点とすると、多角形は点が三つ以上であるため。）
-		double distance = sqrt(pow(vertex_head->GetX() - clickPoint.GetX(), 2) + pow(vertex_head->GetY() - clickPoint.GetY(), 2)) * ratio;
-		if (distance <= CONNECT_DISTANCE) { // クリックした座標と一つ目の点との距離が0.2以下なら
-			return true;
-		}
-	}
-	return false;
-}
-
-void CShape::DecideEndPoint(double x, double y, double ratio) {
-	CVertex* endV = new CVertex(vertex_head->GetX(), vertex_head->GetY(), NULL);
-	vertex_tail->SetNext(endV); // 終点を始点に
-	SetVector(endV);
+void CShape::DecideEndPoint(double x, double y) {
+	CVertex* endV = new CVertex(vertex_head->GetX(), vertex_head->GetY());
+	SetVertex(endV->GetX(), endV->GetY());// 終点を始点に
 				
 	end_vertex_set = true;
 }
@@ -122,6 +199,36 @@ bool CShape::GetEndVertexSet()
 	return end_vertex_set;
 }
 
+void CShape::SetSelectedFlag(bool selected_flag)
+{
+	this->selected_flag = selected_flag;
+}
+
+bool CShape::GetSelectedFlag()
+{
+	return selected_flag;
+}
+
+void CShape::SetAPartSelectable(bool a_part_selectable)
+{
+	this->a_part_selectable = a_part_selectable;
+}
+
+bool CShape::GetAPartSelectable()
+{
+	return a_part_selectable;
+}
+
+void CShape::SetAllSelectedFlag(bool all_selected_flag)
+{
+	for (CVertex* nowVer = vertex_head; nowVer != NULL; nowVer = nowVer->GetNext()) {
+		nowVer->SetSelectedFlag(all_selected_flag);
+	}
+	for (CVector* nowVec = vector_head; nowVec != NULL; nowVec = nowVec->GetNext()) {
+		nowVec->SetSelectedFlag(all_selected_flag);
+	}
+}
+
 int CShape::GetVertexCnt() {
 	return vertex_cnt;
 }
@@ -129,6 +236,80 @@ int CShape::GetVertexCnt() {
 int CShape::GetVectorCnt()
 {
 	return vector_cnt;
+}
+
+void CShape::MoveVertices(CVertex* clickPoint)
+{
+	for (CVertex* nowVer = vertex_head; nowVer != NULL; nowVer = nowVer->GetNext()) {
+		if (nowVer->GetSelectedFlag()) {
+			nowVer->SetXY(nowVer->GetX() + clickPoint->GetX(), nowVer->GetY() + clickPoint->GetY());
+		}
+	}
+}
+
+void CShape::Move(CVertex* clickPoint)
+{
+	MoveVertices(clickPoint);
+}
+
+void CShape::MEV(CVertex* clickPoint)
+{
+	CVector* selectedVec = CMath::GetSelectedLine(this, clickPoint);
+	if (selectedVec != NULL) {
+		selectedVec->GetStartPoint()->Insert(clickPoint);
+		CVector* insertVec = new CVector(clickPoint, selectedVec->GetEndPoint());
+		selectedVec->Insert(insertVec);
+		vertex_cnt++;
+		vector_cnt++;
+	}
+}
+
+void CShape::KEV(CVertex* clickPoint)
+{
+	CVertex* selectedVer = CMath::GetSelectedPoint(this, clickPoint);
+	CVector* preVec = NULL;
+	for (CVector* nowVec = vector_head; nowVec != NULL; nowVec = nowVec->GetNext()) {
+		CVector* deleteVec = nowVec;
+		if (selectedVer == vertex_tail) {
+			selectedVer = vertex_head;
+		}
+		if (deleteVec->GetStartPoint() == selectedVer) {
+			if (nowVec == vector_head) {
+				// ↓選択された点を始点とする辺の削除↓
+				vector_tail->SetEndPoint(vector_head->GetEndPoint()->GetX(), vector_head->GetEndPoint()->GetY());
+				vector_head = deleteVec->GetNext();
+				delete deleteVec;
+				// ↑選択された点を始点とする辺の削除↑
+
+				// ↓選択された点の削除↓
+				vertex_head = selectedVer->GetNext();
+				vertex_tail->SetXY(vertex_head->GetX(), vertex_head->GetY());
+				delete selectedVer;
+				// ↑選択された点の削除↑
+
+				vertex_cnt--;
+				vector_cnt--;
+				break;
+			}
+			else {
+				// ↓選択された点を始点とする辺の削除↓
+				preVec->SetEndPoint(nowVec->GetEndPoint());
+				preVec->SetNext(nowVec->GetNext());
+				delete deleteVec;
+				// ↑選択された点を始点とする辺の削除↑
+
+				// ↓選択された点の削除↓
+				preVec->GetStartPoint()->SetNext(selectedVer->GetNext());
+				delete selectedVer;
+				// ↑選択された点の削除↑
+
+				vertex_cnt--;
+				vector_cnt--;
+				break;
+			}
+		}
+		preVec = nowVec;
+	}
 }
 
 void CShape::SetVector(CVertex* newVer) {
@@ -142,91 +323,6 @@ void CShape::SetVector(CVertex* newVer) {
 		vector_tail = vector_tail->GetNext();
 	}
 	vector_cnt++;
-}
-
-double CShape::CalcInnerProduct2d(CVector va, CVector vb) {
-
-	double x = va.CalcPositionVector()->GetX();
-	double y = va.CalcPositionVector()->GetY();
-	CVertex a(x, y, NULL);
-
-	x = va.CalcPositionVector()->GetX();
-	y = va.CalcPositionVector()->GetY();
-	CVertex b(x, y, NULL);
-	return a.GetX() * b.GetX() + a.GetY() * b.GetY();
-}
-
-double CShape::CalcCrossProduct2d(CVector va, CVector vb)
-{
-	double x = va.CalcPositionVector()->GetX();
-	double y = va.CalcPositionVector()->GetY();
-	CVertex a(x, y, NULL);
-
-	x = vb.CalcPositionVector()->GetX();
-	y = vb.CalcPositionVector()->GetY();
-	CVertex b(x, y, NULL);
-	return a.GetX() * b.GetY() - a.GetY() * b.GetX();
-}
-
-bool CShape::IsCrossing(double x, double y) {
-	// 頂点が2つ以上なら
-	if (vector_cnt >= 2) {
-		CVector tmpVec(vertex_tail, new CVertex(x, y, NULL));
-		for (CVector* nowVec = vector_head; nowVec != NULL; nowVec = nowVec->GetNext()) {
-			if (nowVec->GetEndPoint()->GetX() != tmpVec.GetStartPoint()->GetX()
-				&& nowVec->GetEndPoint()->GetY() != tmpVec.GetStartPoint()->GetY()) {// 二つのベクトルの始点と終点が一致していなければ
-				if (IsCrossingCore(*nowVec, tmpVec)) {
-					return true;
-				}
-			}
-		}
-	}
-	return false;
-}
-
-bool CShape::IsCrossingForOtherShape(CVector vec) {
-	for (CVector* nowVec = vector_head; nowVec != NULL; nowVec = nowVec->GetNext()) {
-		if (!vec.IsZeroVector()) {// ゼロベクトルじゃないなら
-			if (IsCrossingCore(*nowVec, vec)) {// 交差判定
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-bool CShape::IsCrossingCore(CVector va, CVector vb)
-{
-	CVector a1(va.GetStartPoint(), vb.GetStartPoint());
-	CVector a2(va.GetStartPoint(), vb.GetEndPoint());
-	CVector b1(vb.GetStartPoint(), va.GetStartPoint());
-	CVector b2(vb.GetStartPoint(), va.GetEndPoint());
-
-	double ca1 = CalcCrossProduct2d(va, a1);
-	double ca2 = CalcCrossProduct2d(va, a2);
-	double cb1 = CalcCrossProduct2d(vb, b1);
-	double cb2 = CalcCrossProduct2d(vb, b2);
-	if (ca1 * ca2 <= 0 && cb1 * cb2 <= 0) {
-		return true;
-	}
-	else {
-		return false;
-	}
-}
-
-bool CShape::IsInside(CShape* targetShape, CVertex* clickPoint)
-{
-	double theta = 0; // θ（角度）
-	CVertex* nowVer = targetShape->vertex_head;
-	CVector va(clickPoint, nowVer);
-	nowVer = nowVer->GetNext();
-	while (nowVer != NULL) {
-		CVector vb(clickPoint, nowVer);
-		theta += atan2(targetShape->CalcCrossProduct2d(va, vb), targetShape->CalcInnerProduct2d(va, vb));
-		va = vb;
-		nowVer = nowVer->GetNext();
-	}
-	return abs(2 * M_PI - theta) <= 0.1 ;
 }
 
 //　動的確保したVertexを解放する
