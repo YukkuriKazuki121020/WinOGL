@@ -155,10 +155,39 @@ bool CMath::IsCrossing(CShape* targetShape, CVector vec)
 {	
 	for (CVector* nowVec = targetShape->GetVectorHead(); nowVec != NULL; nowVec = nowVec->GetNext()) {
 		if (nowVec->GetEndPoint()->GetX() != vec.GetStartPoint()->GetX()
-			&& nowVec->GetEndPoint()->GetY() != vec.GetStartPoint()->GetY()) {// 二つのベクトルの始点と終点が一致していなければ（自己交差の場合、同じ頂点を共有する辺同士は必ず交差するため）
+			&& nowVec->GetEndPoint()->GetY() != vec.GetStartPoint()->GetY()
+			&& nowVec->GetStartPoint()->GetX() != vec.GetEndPoint()->GetX()
+			&& nowVec->GetStartPoint()->GetY() != vec.GetEndPoint()->GetY()) {
+			// 一方のベクトルの終点ともう一方のベクトルの始点が一致していなければ（自己交差の場合、同じ頂点を共有する辺同士は必ず交差するため）
+			if (nowVec->GetStartPoint()->GetX() == vec.GetStartPoint()->GetX()
+			  && nowVec->GetStartPoint()->GetY() == vec.GetStartPoint()->GetY()) {
+				// 二つのベクトルの始点が一致していなければ（KEVの際の交差判定用）
+				if (nowVec->GetEndPoint()->GetX() == vec.GetEndPoint()->GetX()
+					&& nowVec->GetEndPoint()->GetY() == vec.GetEndPoint()->GetY()) {
+					// 二つのベクトルの終点が一致していなければ（KEVの際の交差判定用）
+					return true;
+				}
+				else {
+					return false;
+				}
+			}
+			if (nowVec->GetEndPoint()->GetX() == vec.GetEndPoint()->GetX()
+				&& nowVec->GetEndPoint()->GetY() == vec.GetEndPoint()->GetY()) {
+				// 二つのベクトルの終点が一致していなければ（KEVの際の交差判定用）
+				if (nowVec->GetStartPoint()->GetX() == vec.GetStartPoint()->GetX()
+					&& nowVec->GetStartPoint()->GetY() == vec.GetStartPoint()->GetY()) {
+					// 二つのベクトルの始点が一致していなければ（KEVの際の交差判定用）
+					return true;
+				}
+				else {
+					return false;
+				}
+			}
+			
 			if (IsCrossingCore(*nowVec, vec)) {
 				return true;
 			}
+			
 		}
 	}
 	return false;
@@ -166,32 +195,46 @@ bool CMath::IsCrossing(CShape* targetShape, CVector vec)
 
 bool CMath::IsInside(CShape* targetShape, CVertex* innerVertex)
 {
-	double theta = 0; // θ（角度）
-	CVertex* nowVer = targetShape->GetVertexHead();
-	CVector va;
-	CVector vb;
-	do {
-		va = CVector(innerVertex,nowVer);
-		nowVer = nowVer->GetNext();
-		vb = CVector(innerVertex, nowVer);
-		theta += atan2(CalcCrossProduct2d(va, vb), CalcInnerProduct2d(va, vb));
-	} while (nowVer->GetNext() != NULL);
-	
-	return abs(2 * M_PI - abs(theta)) <= 0.1;
+	for (CShape* nowS = targetShape; nowS != NULL; nowS = nowS->GetNext()) {
+		double theta = 0; // θ（角度）
+		if (nowS->GetVertexHead() == NULL || nowS->GetVectorHead() == NULL) {
+			break;
+		}
+		CVertex* nowVer = nowS->GetVertexHead();
+		CVector va;
+		CVector vb;
+		do {
+			va = CVector(innerVertex, nowVer);
+			nowVer = nowVer->GetNext();
+			vb = CVector(innerVertex, nowVer);
+			theta += atan2(CalcCrossProduct2d(va, vb), CalcInnerProduct2d(va, vb));
+		} while (nowVer->GetNext() != NULL);
+
+		if (abs(2 * M_PI - abs(theta)) <= 0.1) {
+			return true;
+		}
+	}
+	return false;
 }
 
-bool CMath::IsInsideForAll(CShape* closingShape, CShape* targetShapes, CVertex* clickVertex)
+bool CMath::IsInsideForAll(CShape* closingShape, CShape* targetShapes, CVertex* clickVertex, char mode)
 {
 	CShape* tmpShape = new CShape();// closingShapeにクリックした座標を頂点として追加した形状
-	for (CVertex* nowVer = closingShape->GetVertexHead(); nowVer != NULL; nowVer = nowVer->GetNext()) {// closingShapeの頂点をコピー（頂点を追加していくとベクトルも追加されるので、頂点のコピーのみでよい）
-		tmpShape->SetVertex(nowVer->GetX(), nowVer->GetY());
+	closingShape->Clone(tmpShape);
+	if (mode == 's') {
+		tmpShape->SetVertex(clickVertex->GetX(), clickVertex->GetY());
 	}
-	tmpShape->SetVertex(clickVertex->GetX(), clickVertex->GetY());
-	for (CShape* nowS = targetShapes; nowS != closingShape; nowS = nowS->GetNext()) {
-		for (CVertex* nowTargetShapeVer = nowS->GetVertexHead(); nowTargetShapeVer != NULL; nowTargetShapeVer = nowTargetShapeVer->GetNext()) {
-			// nowTargetShapeVer:現在見ているtargetShapesの点を格納。
-			if (IsInside(tmpShape, nowTargetShapeVer)) {
-				return true;
+	else if (mode == 'd') {
+		tmpShape->KEV(clickVertex);
+	}
+	
+	for (CShape* nowS = targetShapes; nowS != NULL; nowS = nowS->GetNext()) {
+		if (nowS != closingShape) {
+			for (CVertex* nowTargetShapeVer = nowS->GetVertexHead(); nowTargetShapeVer != NULL; nowTargetShapeVer = nowTargetShapeVer->GetNext()) {
+				// nowTargetShapeVer:現在見ているtargetShapesの点を格納。
+				if (IsInside(tmpShape, nowTargetShapeVer)) {
+					return true;
+				}
 			}
 		}
 	}

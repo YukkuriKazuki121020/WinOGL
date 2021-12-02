@@ -9,6 +9,7 @@ CAdminControl::CAdminControl()
 	axisFlag = false;
 	lButtonClicking = false;
 	dragging = false;
+	moving = false;
 	mevFlag = false;
 	kevFlag = false;
 	debugFlag = false;
@@ -33,11 +34,6 @@ void CAdminControl::SetVertex(double x, double y, double ratio)
 					shape_tail->SetNext(new CShape()); // 次の形を生成
 					shape_tail = shape_tail->GetNext(); // 末尾の形状を取得
 				}
-				if (shape_head->GetNext() != NULL && nowS != shape_tail) {// 形状が2つ以上あり、現在見ている形状が末尾の形状でないとき
-					if (CMath::IsInside(nowS, clickVertex)) {// 内外判定
-						break;
-					}
-				}
 				if (shape_tail->GetVertexCnt() >= 1) {// 末尾の形状を構成する頂点が1つ以上のとき
 					if (CMath::IsCrossing(nowS, CVector(shape_tail->GetVertexTail(), clickVertex))) {// 自己または他の形状と交差していないとき
 						break;
@@ -45,9 +41,9 @@ void CAdminControl::SetVertex(double x, double y, double ratio)
 					else {
 						if (nowS == shape_tail) {
 							if (CMath::DamnAimChecker(shape_tail, *clickVertex)) {// クリックした頂点と閉じようとしている形状の始点が近い距離にあるとき
-								if (shape_head->GetNext() == NULL || !CMath::IsInsideForAll(shape_tail, shape_head, clickVertex)) {
+								if (shape_head->GetNext() == NULL || !CMath::IsInsideForAll(shape_tail, shape_head, clickVertex, 's')) {
 									// 形状が1つのみなら強制で追加
-									// 形状多1つ以上なら、閉じようとしているが他の形状を内包していないとき
+									// 形状が1つ以上なら、閉じようとしている形状が他の形状を内包していないとき
 									shape_tail->DecideEndPoint(x, y);// 形状の終点を決定
 								}
 							}
@@ -58,7 +54,7 @@ void CAdminControl::SetVertex(double x, double y, double ratio)
 						}
 					}
 				}
-				else {
+				else if (!CMath::IsInside(shape_head, clickVertex)) {
 					shape_tail->SetVertex(x, y);// 末尾の形状に頂点を追加
 				}
 			}
@@ -130,7 +126,17 @@ void CAdminControl::KEV(double x, double y)
 	if (kevFlag) {
 		CVertex* clickPoint = new CVertex(x, y);
 		for (CShape* nowS = shape_head; nowS != NULL; nowS = nowS->GetNext()) {
-			nowS->KEV(clickPoint);
+			if (nowS->GetVertexCnt() >= 5 && !CMath::IsInsideForAll(nowS,shape_head,clickPoint,'d')) {
+				CShape* tmpShape = new CShape();
+				nowS->Clone(tmpShape);
+				tmpShape->KEV(clickPoint);
+				for (CVector* nowVec = tmpShape->GetVectorHead(); nowVec != NULL; nowVec = nowVec->GetNext()) {
+					if (!CMath::IsCrossing(nowS, *nowVec)) {
+						nowS->KEV(clickPoint);
+						break;
+					}
+				}
+			}
 		}
 	}
 }

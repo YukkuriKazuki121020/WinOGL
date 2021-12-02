@@ -24,6 +24,7 @@ public :
 	bool axisFlag;
 	bool lButtonClicking;
 	bool dragging;
+	bool moving;
 	bool mevFlag;
 	bool kevFlag;
 	bool debugFlag;

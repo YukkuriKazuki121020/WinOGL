@@ -274,7 +274,7 @@ void CShape::KEV(CVertex* clickPoint)
 			selectedVer = vertex_head;
 		}
 		if (deleteVec->GetStartPoint() == selectedVer) {
-			if (nowVec == vector_head) {
+			if (deleteVec == vector_head) {
 				// ↓選択された点を始点とする辺の削除↓
 				vector_tail->SetEndPoint(vector_head->GetEndPoint()->GetX(), vector_head->GetEndPoint()->GetY());
 				vector_head = deleteVec->GetNext();
@@ -309,6 +309,13 @@ void CShape::KEV(CVertex* clickPoint)
 			}
 		}
 		preVec = nowVec;
+	}
+}
+
+void CShape::Clone(CShape* cloneShape)
+{
+	for (CVertex* nowVer = vertex_head; nowVer != NULL; nowVer = nowVer->GetNext()) {// closingShapeの頂点をコピー（頂点を追加していくとベクトルも追加されるので、頂点のコピーのみでよい）
+		cloneShape->SetVertex(nowVer->GetX(), nowVer->GetY());
 	}
 }
 

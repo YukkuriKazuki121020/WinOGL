@@ -51,6 +51,7 @@ public:
 	void Move(CVertex* clickPoint);// 移動する関数
 	void MEV(CVertex* clickPoint);// Make Edge Vertex（辺に頂点を追加する関数）
 	void KEV(CVertex* clickPoint);// Kill Edge Vertex（辺から頂点を削除する関数）
+	void Clone(CShape* cloneShape);// 自分の情報を全て渡す関数
 
 	//bool IsClockWise();// 時計回りかどうかを判定する
 };
