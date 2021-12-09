@@ -81,6 +81,7 @@ bool CMath::JudgeSelectedForShape(CShape* Shape, CVertex* clickPoint)
 			return false;
 		}
 	}
+	Shape->SetSelectedFlag(false);
 	return false;
 }
 
@@ -109,9 +110,15 @@ CVector* CMath::GetSelectedLine(CShape* targetShape, CVertex* clickPoint)
 
 CShape* CMath::GetSelectedShape(CShape* shape_head, CVertex* clickPoint)
 {
-	for (CShape* nowShape = shape_head; nowShape != NULL; nowShape = nowShape->GetNext()) {
-		if (JudgeSelectedForShape(nowShape, clickPoint)) {
-			return nowShape;
+	for (CShape* nowS = shape_head; nowS != NULL; nowS = nowS->GetNext()) {
+		CShape* tmpShape = new CShape();
+		nowS->Clone(tmpShape);
+		if (JudgeSelectedForShape(tmpShape, clickPoint)) {
+			nowS->SetSelectedFlag(true);
+			return nowS;
+		}
+		else {
+			nowS->SetSelectedFlag(false);
 		}
 	}
 	return NULL;

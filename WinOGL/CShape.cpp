@@ -110,21 +110,25 @@ void CShape::DrawSelectedShape()
 	glEnd();
 }
 
-void CShape::Draw(CVertex* clickPoint, bool editFlag, bool dragging)
+void CShape::Draw(CVertex* clickPoint, bool editFlag, bool lButtonClicking, bool dragging)
 {
+	CVector* selectedLine = NULL;
+	CVertex* selectedVer = NULL;
+	CShape* selectedShape = NULL;
+
 	if (editFlag) {
-		if (!dragging) {//マウスをドラッグしているときは選択されているかのフラグの初期化をしない
+		if (lButtonClicking && !dragging) {//マウスをドラッグしているときは選択されているかのフラグの初期化をしない
 			for (CVector* nowVec = vector_head; nowVec != NULL; nowVec = nowVec->GetNext()) {
 				nowVec->SetSelectedFlag(false);
 				nowVec->GetStartPoint()->SetSelectedFlag(false);
 				nowVec->GetEndPoint()->SetSelectedFlag(false);
 			}
+			selectedLine = CMath::GetSelectedLine(this, clickPoint);
+			selectedVer = CMath::GetSelectedPoint(this, clickPoint);
+			selectedShape = CMath::GetSelectedShape(this, clickPoint);
 		}
 	}
 
-	CVector* selectedLine = CMath::GetSelectedLine(this, clickPoint);
-	CVertex* selectedVer = CMath::GetSelectedPoint(this, clickPoint);
-	CShape* selectedShape = CMath::GetSelectedShape(this, clickPoint);
 
 	DrawLines();
 	if (editFlag) {
@@ -149,7 +153,7 @@ void CShape::Draw(CVertex* clickPoint, bool editFlag, bool dragging)
 	if (editFlag) {
 		if (a_part_selectable) {//どこか(頂点、辺、面のいずれか)ひとつでも選択できるとき
 			if (end_vertex_set) {
-				if (selectedShape != NULL) {
+				if (selectedShape != NULL && selected_flag) {
 					a_part_selectable = false;
 					DrawSelectedShape();
 				}
@@ -247,9 +251,41 @@ void CShape::MoveVertices(CVertex* clickPoint)
 	}
 }
 
+void CShape::MoveLines(CVertex* clickPoint)
+{
+	for (CVector* nowVec = vector_head; nowVec != NULL; nowVec = nowVec->GetNext()) {
+		if (nowVec->GetSelectedFlag()) {
+			CVertex* sp = nowVec->GetStartPoint();
+			CVertex* ep = nowVec->GetEndPoint();
+			
+			sp->SetXY(sp->GetX() + clickPoint->GetX(), sp->GetY() + clickPoint->GetY());
+			if (sp == vertex_head) {
+				vertex_tail->SetXY(vertex_tail->GetX() + clickPoint->GetX(), vertex_tail->GetY() + clickPoint->GetY());
+			}
+			ep->SetXY(ep->GetX() + clickPoint->GetX(), ep->GetY() + clickPoint->GetY());
+			if (ep == vertex_tail) {
+				vertex_head->SetXY(vertex_head->GetX() + clickPoint->GetX(), vertex_head->GetY() + clickPoint->GetY());
+			}
+		}
+	}
+}
+
+void CShape::MoveShape(CVertex* clickPoint)
+{
+	for (CVertex* nowVer = vertex_head; nowVer != NULL; nowVer = nowVer->GetNext()) {
+		nowVer->SetXY(nowVer->GetX() + clickPoint->GetX(), nowVer->GetY() + clickPoint->GetY());
+	}
+}
+
 void CShape::Move(CVertex* clickPoint)
 {
-	MoveVertices(clickPoint);
+	if (selected_flag) {
+		MoveShape(clickPoint);
+	}
+	else {
+		MoveLines(clickPoint);
+		MoveVertices(clickPoint);
+	}
 }
 
 void CShape::MEV(CVertex* clickPoint)
@@ -316,6 +352,9 @@ void CShape::Clone(CShape* cloneShape)
 {
 	for (CVertex* nowVer = vertex_head; nowVer != NULL; nowVer = nowVer->GetNext()) {// closingShapeの頂点をコピー（頂点を追加していくとベクトルも追加されるので、頂点のコピーのみでよい）
 		cloneShape->SetVertex(nowVer->GetX(), nowVer->GetY());
+		if (CMath::DamnAimChecker(cloneShape, *nowVer)) {
+			cloneShape->DecideEndPoint(nowVer->GetX(), nowVer->GetY());
+		}
 	}
 }
 

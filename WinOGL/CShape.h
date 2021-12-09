@@ -32,7 +32,7 @@ private:
 	void SetVector(CVertex* newV);
 public:
 	void SetVertex(double x, double y);
-	void Draw(CVertex* clickPoint, bool editFlag ,bool dragging);
+	void Draw(CVertex* clickPoint, bool editFlag, bool lButtonClicking, bool dragging);
 	CVertex* GetVertexHead();// ˆê‚Â–Ú‚Ì“_‚ğ•Ô‚·ŠÖ”
 	CVertex* GetVertexTail();// ÅŒã‚Ì“_‚ğ•Ô‚·ŠÖ”
 	void SetNext(CShape* new_next);// Ÿ‚ÌŒ`ó‚ğİ’è‚·‚éŠÖ”

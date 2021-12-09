@@ -142,7 +142,6 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 	AC.MEV(clickX, clickY);
 	AC.KEV(clickX, clickY);
 
-	AC.dragging = true;
 	AC.lButtonClicking = true;
 	AC.SetVertex(clickX, clickY ,ratio);
 
@@ -159,10 +158,6 @@ void CWinOGLView::OnMouseMove(UINT nFlags, CPoint point)
 	}
 	else {
 		AC.dragging = false;
-	}
-
-	if (AC.dragging) {
-
 	}
 
 	if (AC.editFlag) {
@@ -214,7 +209,6 @@ void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 {
 	AC.lButtonClicking = false;
 	AC.dragging = false;
-	RedrawWindow();
 
 	CView::OnLButtonUp(nFlags, point);
 }

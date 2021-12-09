@@ -80,14 +80,14 @@ void CAdminControl::Draw(double x, double y)
 					if (!dragging) {// マウスをドラッグしているときは選択可否の更新をしない
 						nowS->SetAPartSelectable(true);
 						if (old_shape != NULL) {
-							if (!old_shape->GetAPartSelectable()) {
+							if (old_shape->GetAPartSelectable()) {
 								nowS->SetAPartSelectable(false);
 							}
 						}
 					}
 				}
 				
-				nowS->Draw(clickPoint, editFlag, dragging);
+				nowS->Draw(clickPoint, editFlag, lButtonClicking, dragging);
 				old_shape = nowS;
 			}
 		}
@@ -103,7 +103,17 @@ void CAdminControl::Move(double x, double y)
 			if (shape_head->GetVertexHead() != NULL) {
 				CShape* old_shape = NULL;
 				for (CShape* nowS = shape_head; nowS != NULL; nowS = nowS->GetNext()) {
-					nowS->Move(clickPoint);
+					if (old_shape == NULL) {
+						nowS->Move(clickPoint);
+					}
+					else if(old_shape->GetAPartSelectable()){
+						if (!nowS->GetAPartSelectable()) {
+							nowS->Move(clickPoint);
+						}
+					}
+					if (!nowS->GetAPartSelectable()) {
+						old_shape = nowS;
+					}
 				}
 			}
 		}
@@ -146,6 +156,7 @@ void CAdminControl::SetAllSelectedFlag(bool selected_flag)
 	for (CShape* nowS = shape_head; nowS != NULL; nowS = nowS->GetNext()) {
 		nowS->SetAllSelectedFlag(selected_flag);
 	}
+
 }
 
 void CAdminControl::Debug()
