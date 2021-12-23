@@ -67,6 +67,11 @@ public:
 	afx_msg void OnUpdateKillEdgeVertex(CCmdUI* pCmdUI);
 	afx_msg void OnDebug();
 	afx_msg void OnUpdateDebug(CCmdUI* pCmdUI);
+	afx_msg void OnRotate();
+	afx_msg void OnUpdateRotate(CCmdUI* pCmdUI);
+	afx_msg void OnScale();
+	afx_msg void OnUpdateScale(CCmdUI* pCmdUI);
+	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 };
 
 #ifndef _DEBUG  // WinOGLView.cpp のデバッグ バージョン

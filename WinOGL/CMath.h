@@ -26,8 +26,9 @@ public:
 	static double CalcInnerProduct2d(CVector va, CVector vb);// 内積（二次元）
 	static double CalcCrossProduct2d(CVector va, CVector vb);// 外積（二次元）
 	static bool IsCrossing(CShape* targetShape, CVector vec);// 交差判定（形状のすべての辺について）の関数
-	static bool IsInside(CShape* targetShape, CVertex* innerVertex);// 判定
-	static bool IsInsideForAll(CShape* closingShape, CShape* targetShapes, CVertex* clickVertex, char mode);// 内外判定
+	static bool IsCrossingForAll(CShape* targetShape, CShape* shape_head, CVertex* clickVertex, const char* mode);// 交差判定（任意の形状を対象にした全ての形状について）の関数
+	static bool IsInside(CShape* targetShape, CVertex* innerVertex);// 内包判定
+	static bool IsInsideForAll(CShape* targetShape, CShape* shape_head, CVertex* clickVertex, const char* mode);// 内外判定
 
 private:
 	static bool IsCrossingCore(CVector va, CVector vb);// 交差判定の内部

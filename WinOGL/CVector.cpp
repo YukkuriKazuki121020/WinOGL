@@ -9,6 +9,7 @@ CVector::CVector()
 	next_vector = NULL;
 	SetStartPoint(0, 0);
 	SetEndPoint(0, 0);
+	selected_flag = false;
 }
 
 CVector::CVector(CVertex* sp, CVertex* ep)
@@ -49,6 +50,7 @@ void CVector::SetEndPoint(double x, double y)
 {
 	ep->SetX(x);
 	ep->SetY(y);
+	CalcPositionVector();
 }
 
 void CVector::SetEndPoint(CVertex* ep)
@@ -64,10 +66,10 @@ CVertex* CVector::GetEndPoint()
 /* 位置ベクトルの計算関数 */
 CVertex* CVector::CalcPositionVector()
 {
-	CVertex* p = new CVertex;
-	p->SetX(this->ep->GetX() - this->sp->GetX());
-	p->SetY(this->ep->GetY() - this->sp->GetY());
-	return p;
+	CVertex* pv = new CVertex;
+	pv->SetX(this->ep->GetX() - this->sp->GetX());
+	pv->SetY(this->ep->GetY() - this->sp->GetY());
+	return pv;
 }
 
 double CVector::CalcVectorSize()

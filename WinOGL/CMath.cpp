@@ -4,6 +4,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #define CONNECT_DISTANCE 0.05
+#define LINE_SELECTION_DISTANCE 0.025
 
 CMath::CMath()
 {
@@ -26,7 +27,6 @@ bool CMath::JudgeDistance(CVertex* Ver, CVertex* clickPoint)
 bool CMath::JudgeSelectedForPoint(CVertex* Ver, CVertex* clickPoint)
 {
 	if (JudgeDistance(Ver, clickPoint)) {
-		Ver->SetSelectedFlag(true);
 		return true;
 	}
 	return false;
@@ -46,8 +46,7 @@ bool CMath::JudgeSelectedForLine(CVector* Vec, CVertex* clickPoint)
 
 	va = CVector(Vec->GetStartPoint(), clickPoint);
 	double s = CalcInnerProduct2d(va, *Vec) / CalcInnerProduct2d(*Vec, *Vec);
-	if ((abs(d) <= CONNECT_DISTANCE) && (s >= 0 && s <= 1)) {
-		Vec->SetSelectedFlag(true);
+	if ((abs(d) <= LINE_SELECTION_DISTANCE) && (s >= 0 && s <= 1)) {
 		return true;
 	}
 	else {
@@ -60,28 +59,22 @@ bool CMath::JudgeSelectedForShape(CShape* Shape, CVertex* clickPoint)
 	if (Shape->GetEndVertexSet()) {//形状が閉じているとき
 		for (CVector* nowVec = Shape->GetVectorHead(); nowVec != NULL; nowVec = nowVec->GetNext()) {
 			if (JudgeSelectedForPoint(nowVec->GetStartPoint(), clickPoint)) {// 始点の選択判定
-				Shape->SetSelectedFlag(false);
 				return false;
 			}
 			if (JudgeSelectedForPoint(nowVec->GetEndPoint(), clickPoint)) {// 終点の選択判定
-				Shape->SetSelectedFlag(false);
 				return false;
 			}
 			if (JudgeSelectedForLine(nowVec, clickPoint)) {//辺の選択判定
-				Shape->SetSelectedFlag(false);
 				return false;
 			}
 		}
 		if (IsInside(Shape, clickPoint)) {
-			Shape->SetSelectedFlag(true);
 			return true;
 		}
 		else {
-			Shape->SetSelectedFlag(false);
 			return false;
 		}
 	}
-	Shape->SetSelectedFlag(false);
 	return false;
 }
 
@@ -161,6 +154,9 @@ double CMath::CalcCrossProduct2d(CVector va, CVector vb)
 bool CMath::IsCrossing(CShape* targetShape, CVector vec)
 {	
 	for (CVector* nowVec = targetShape->GetVectorHead(); nowVec != NULL; nowVec = nowVec->GetNext()) {
+		if (nowVec->GetStartPoint() == vec.GetStartPoint() && nowVec->GetEndPoint() == vec.GetEndPoint()) {
+			continue;
+		}
 		if (nowVec->GetEndPoint()->GetX() != vec.GetStartPoint()->GetX()
 			&& nowVec->GetEndPoint()->GetY() != vec.GetStartPoint()->GetY()
 			&& nowVec->GetStartPoint()->GetX() != vec.GetEndPoint()->GetX()
@@ -200,6 +196,55 @@ bool CMath::IsCrossing(CShape* targetShape, CVector vec)
 	return false;
 }
 
+bool CMath::IsCrossingForAll(CShape* targetShape, CShape* shape_head, CVertex* clickVertex, const char* mode)
+{
+	CShape* tmpShape = new CShape();// targetShapeにクリックした座標を頂点として追加した形状
+	targetShape->Clone(tmpShape);
+	if (mode == "setVertex") {
+		//set vertexモード
+		tmpShape->SetVertex(clickVertex->GetX(), clickVertex->GetY());
+	}
+	else if (mode == "kev") {
+		//kevモード
+		tmpShape->KEV(clickVertex);
+	}
+	else if (mode == "move") {
+		//moveモード
+		tmpShape->Move(clickVertex);
+	}
+	else if (mode == "scale_expanding") {
+		//scaleモード
+		//拡大
+		tmpShape->Scale("expanding");
+	}
+	else if (mode == "scale_shrinking") {
+		//scaleモード
+		//縮小
+		tmpShape->Scale("shrinking");
+	}
+	else if (mode == "rotate_right") {
+		//rotateモード
+		//右回転
+		tmpShape->Rotate(clickVertex, "right");
+	}
+	else if (mode == "rotate_left") {
+		//rotateモード
+		//左回転
+		tmpShape->Rotate(clickVertex, "left");
+	}
+
+	for (CShape* nowS = shape_head; nowS != NULL; nowS = nowS->GetNext()) {
+		if (nowS != targetShape) {
+			for (CVector* nowTargetVec = nowS->GetVectorHead(); nowTargetVec != NULL; nowTargetVec = nowTargetVec->GetNext()) {
+				if (IsCrossing(tmpShape, *nowTargetVec)) {
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
 bool CMath::IsInside(CShape* targetShape, CVertex* innerVertex)
 {
 	for (CShape* nowS = targetShape; nowS != NULL; nowS = nowS->GetNext()) {
@@ -224,19 +269,45 @@ bool CMath::IsInside(CShape* targetShape, CVertex* innerVertex)
 	return false;
 }
 
-bool CMath::IsInsideForAll(CShape* closingShape, CShape* targetShapes, CVertex* clickVertex, char mode)
+bool CMath::IsInsideForAll(CShape* targetShape, CShape* shape_head, CVertex* clickVertex, const char* mode)
 {
-	CShape* tmpShape = new CShape();// closingShapeにクリックした座標を頂点として追加した形状
-	closingShape->Clone(tmpShape);
-	if (mode == 's') {
+	CShape* tmpShape = new CShape();// targetShapeにクリックした座標を頂点として追加した形状
+	targetShape->Clone(tmpShape);
+	if (mode == "setVertex") {
+		//set vertexモード
 		tmpShape->SetVertex(clickVertex->GetX(), clickVertex->GetY());
 	}
-	else if (mode == 'd') {
+	else if (mode == "kev") {
+		//kevモード
 		tmpShape->KEV(clickVertex);
 	}
-	
-	for (CShape* nowS = targetShapes; nowS != NULL; nowS = nowS->GetNext()) {
-		if (nowS != closingShape) {
+	else if (mode == "move") {
+		//moveモード
+		tmpShape->Move(clickVertex);
+	}
+	else if (mode == "scale_expanding") {
+		//scaleモード
+		//拡大
+		tmpShape->Scale("expanding");
+	}
+	else if (mode == "scale_shrinking") {
+		//scaleモード
+		//縮小
+		tmpShape->Scale("shrinking");
+	}
+	else if (mode == "rotate_right") {
+		//rotateモード
+		//右回転
+		tmpShape->Rotate(clickVertex, "right");
+	}
+	else if (mode == "rotate_left") {
+		//rotateモード
+		//左回転
+		tmpShape->Rotate(clickVertex, "left");
+	}
+
+	for (CShape* nowS = shape_head; nowS != NULL; nowS = nowS->GetNext()) {
+		if (nowS != targetShape) {
 			for (CVertex* nowTargetShapeVer = nowS->GetVertexHead(); nowTargetShapeVer != NULL; nowTargetShapeVer = nowTargetShapeVer->GetNext()) {
 				// nowTargetShapeVer:現在見ているtargetShapesの点を格納。
 				if (IsInside(tmpShape, nowTargetShapeVer)) {

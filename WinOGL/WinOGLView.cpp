@@ -40,6 +40,11 @@ BEGIN_MESSAGE_MAP(CWinOGLView, CView)
 	ON_UPDATE_COMMAND_UI(ID_KILL_EDGE_VERTEX, &CWinOGLView::OnUpdateKillEdgeVertex)
 	ON_COMMAND(ID_DEBUG, &CWinOGLView::OnDebug)
 	ON_UPDATE_COMMAND_UI(ID_DEBUG, &CWinOGLView::OnUpdateDebug)
+	ON_COMMAND(ID_ROTATE, &CWinOGLView::OnRotate)
+	ON_UPDATE_COMMAND_UI(ID_ROTATE, &CWinOGLView::OnUpdateRotate)
+	ON_COMMAND(ID_SCALE, &CWinOGLView::OnScale)
+	ON_UPDATE_COMMAND_UI(ID_SCALE, &CWinOGLView::OnUpdateScale)
+	ON_WM_MOUSEWHEEL()
 END_MESSAGE_MAP()
 
 // CWinOGLView コンストラクション/デストラクション
@@ -73,7 +78,7 @@ void CWinOGLView::OnDraw(CDC* pDC)
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT /* | GL_DEPTH_BUFFER_BIT */);
 	
-	AC.Draw(clickX, clickY);
+	AC.Draw();
 
 	//glEnd();//ここまで描画の合図
 
@@ -138,6 +143,7 @@ void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 		glOrtho(-1, 1, -ratio, ratio, -100, 100);
 	}
 	AC.SetAllSelectedFlag(false);
+	AC.Select(clickX, clickY);
 
 	AC.MEV(clickX, clickY);
 	AC.KEV(clickX, clickY);
@@ -196,10 +202,9 @@ void CWinOGLView::OnMouseMove(UINT nFlags, CPoint point)
 			double dClickY = clickY - oldClickY;// clickYの移動量
 
 			AC.Move(dClickX, dClickY);
-			AC.Draw(clickX, clickY);
+			RedrawWindow();
 		}
 	}
-	RedrawWindow();
 
 	CView::OnMouseMove(nFlags, point);
 }
@@ -207,8 +212,13 @@ void CWinOGLView::OnMouseMove(UINT nFlags, CPoint point)
 
 void CWinOGLView::OnLButtonUp(UINT nFlags, CPoint point)
 {
+	if (AC.moving) {
+		AC.DeformationDecide();
+	}
 	AC.lButtonClicking = false;
 	AC.dragging = false;
+
+	RedrawWindow();
 
 	CView::OnLButtonUp(nFlags, point);
 }
@@ -296,11 +306,11 @@ void CWinOGLView::OnSize(UINT nType, int cx, int cy)
 
 void CWinOGLView::OnEdit()
 {
-	AC.editFlag = !AC.editFlag;
-	AC.mevFlag = false;
-	AC.kevFlag = false;
-	clickX = 10;
-	clickY = 10;
+	AC.SetFlags("edit");
+	AC.SetAllSelectedFlag(false);
+	clickX *= 10;
+	clickY *= 10;
+	RedrawWindow();
 }
 
 
@@ -338,10 +348,7 @@ void CWinOGLView::OnUpdateXy(CCmdUI* pCmdUI)
 
 void CWinOGLView::OnMakeEdgeVertex()
 {
-	AC.mevFlag = !AC.mevFlag;
-	if (AC.mevFlag) {
-		AC.kevFlag = false;
-	}
+	AC.SetFlags("mev");
 }
 
 
@@ -359,10 +366,7 @@ void CWinOGLView::OnUpdateMakeEdgeVertex(CCmdUI* pCmdUI)
 
 void CWinOGLView::OnKillEdgeVertex()
 {
-	AC.kevFlag = !AC.kevFlag;
-	if (AC.kevFlag) {
-		AC.mevFlag = false;
-	}
+	AC.SetFlags("kev");
 }
 
 
@@ -370,6 +374,42 @@ void CWinOGLView::OnUpdateKillEdgeVertex(CCmdUI* pCmdUI)
 {
 	// AC.mevFlagがtrueのときボタンが沈む
 	if (AC.kevFlag) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
+}
+
+
+void CWinOGLView::OnScale()
+{
+	AC.SetFlags("scale");
+}
+
+
+void CWinOGLView::OnUpdateScale(CCmdUI* pCmdUI)
+{
+	// AC.scaleFlagがtrueのときボタンが沈む
+	if (AC.scaleFlag) {
+		pCmdUI->SetCheck(true);
+	}
+	else {
+		pCmdUI->SetCheck(false);
+	}
+}
+
+
+void CWinOGLView::OnRotate()
+{
+	AC.SetFlags("rotate");
+}
+
+
+void CWinOGLView::OnUpdateRotate(CCmdUI* pCmdUI)
+{
+	// AC.rotateFlagがtrueのときボタンが沈む
+	if (AC.rotateFlag) {
 		pCmdUI->SetCheck(true);
 	}
 	else {
@@ -394,4 +434,19 @@ void CWinOGLView::OnUpdateDebug(CCmdUI* pCmdUI)
 	else {
 		pCmdUI->SetCheck(false);
 	}
+}
+
+
+BOOL CWinOGLView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+	if (zDelta > 0) {// ホイールを前に回したとき
+		AC.Scale("expanding");
+		AC.Rotate(clickX, clickY, "right");
+	}
+	else {// ホイールを後ろに回したとき
+		AC.Scale("shrinking");
+		AC.Rotate(clickX, clickY, "left");
+	}
+	RedrawWindow();
+	return CView::OnMouseWheel(nFlags, zDelta, pt);
 }
