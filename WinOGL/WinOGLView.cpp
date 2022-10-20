@@ -85,6 +85,7 @@ CWinOGLDoc* CWinOGLView::GetDocument() const // デバッグ以外のバージ�
 
 void CWinOGLView::OnLButtonDown(UINT nFlags, CPoint point)
 {
+	// 左クリック押した瞬間の処理
 
 	CView::OnLButtonDown(nFlags, point);
 }
